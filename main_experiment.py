@@ -11,9 +11,9 @@ from training import NeuralProcessTrainer
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Get config file from command line arguments
-if len(sys.argv) != 2:
-    raise(RuntimeError("Wrong arguments, use python main_experiment.py <path_to_config>"))
-config_path = sys.argv[1]
+# if len(sys.argv) != 2:
+#     raise(RuntimeError("Wrong arguments, use python main_experiment.py <path_to_config>"))
+config_path = 'config.json'
 
 # Create a folder to store experiment results
 timestamp = strftime("%Y-%m-%d_%H-%M")
@@ -49,7 +49,7 @@ optimizer = torch.optim.Adam(np_img.parameters(), lr=config["lr"])
 
 np_trainer = NeuralProcessTrainer(device, np_img, optimizer,
                                   num_context_range, num_extra_target_range,
-                                  print_freq=100)
+                                  batch_size, print_freq=100)
 
 for epoch in range(epochs):
     print("Epoch {}".format(epoch + 1))

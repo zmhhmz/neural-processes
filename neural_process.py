@@ -51,7 +51,7 @@ class NeuralProcess(nn.Module):
         """
         return torch.mean(r_i, dim=1)
 
-    def xy_to_mu_sigma(self, x, y):
+    def xy_to_mu_sigma(self, x, y, one_hot):
         """
         Maps (x, y) pairs into the mu and sigma parameters defining the normal
         distribution of the latent variables z.
@@ -75,9 +75,9 @@ class NeuralProcess(nn.Module):
         # Aggregate representations r_i into a single representation r
         r = self.aggregate(r_i)
         # Return parameters of distribution
-        return self.r_to_mu_sigma(r)
+        return self.r_to_mu_sigma(r, one_hot)
 
-    def forward(self, x_context, y_context, x_target, y_target=None):
+    def forward(self, x_context, y_context, one_hot, x_target, y_target=None):
         """
         Given context pairs (x_context, y_context) and target points x_target,
         returns a distribution over target points y_target.
@@ -111,8 +111,8 @@ class NeuralProcess(nn.Module):
         if self.training:
             # Encode target and context (context needs to be encoded to
             # calculate kl term)
-            mu_target, sigma_target = self.xy_to_mu_sigma(x_target, y_target)
-            mu_context, sigma_context = self.xy_to_mu_sigma(x_context, y_context)
+            mu_target, sigma_target = self.xy_to_mu_sigma(x_target, y_target, one_hot)
+            mu_context, sigma_context = self.xy_to_mu_sigma(x_context, y_context, one_hot)
             # Sample from encoded distribution using reparameterization trick
             q_target = Normal(mu_target, sigma_target)
             q_context = Normal(mu_context, sigma_context)
@@ -124,7 +124,7 @@ class NeuralProcess(nn.Module):
             return p_y_pred, q_target, q_context
         else:
             # At testing time, encode only context
-            mu_context, sigma_context = self.xy_to_mu_sigma(x_context, y_context)
+            mu_context, sigma_context = self.xy_to_mu_sigma(x_context, y_context, one_hot)
             # Sample from distribution based on context
             q_context = Normal(mu_context, sigma_context)
             z_sample = q_context.rsample()
@@ -165,7 +165,7 @@ class NeuralProcessImg(nn.Module):
                                             r_dim=r_dim, z_dim=z_dim,
                                             h_dim=h_dim)
 
-    def forward(self, img, context_mask, target_mask):
+    def forward(self, img, one_hot, context_mask, target_mask):
         """
         Given an image and masks of context and target points, returns a
         distribution over pixel intensities at the target points.
@@ -185,4 +185,4 @@ class NeuralProcessImg(nn.Module):
         """
         x_context, y_context = img_mask_to_np_input(img, context_mask)
         x_target, y_target = img_mask_to_np_input(img, target_mask)
-        return self.neural_process(x_context, y_context, x_target, y_target)
+        return self.neural_process(x_context, y_context, one_hot, x_target, y_target)

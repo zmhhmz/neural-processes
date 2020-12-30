@@ -5,6 +5,7 @@ from math import pi
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms
+import os
 
 
 class SineData(Dataset):
@@ -59,7 +60,7 @@ class SineData(Dataset):
         return self.num_samples
 
 
-def mnist(batch_size=16, size=28, path_to_data='../../mnist_data'):
+def mnist(batch_size=16, size=28, path_to_data='../mnist_data'):
     """MNIST dataloader.
 
     Parameters
@@ -77,12 +78,17 @@ def mnist(batch_size=16, size=28, path_to_data='../../mnist_data'):
         transforms.ToTensor()
     ])
 
-    train_data = datasets.MNIST(path_to_data, train=True, download=True,
+    if not (os.path.exists('../mnist_data/')) or not os.listdir('../mnist_data/'):
+        DOWNLOAD_MNIST = True
+    else:
+        DOWNLOAD_MNIST = False
+
+    train_data = datasets.MNIST(path_to_data, train=True, download=DOWNLOAD_MNIST,
                                 transform=all_transforms)
     test_data = datasets.MNIST(path_to_data, train=False,
                                transform=all_transforms)
 
-    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_data, batch_size=batch_size, num_workers=6, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
     return train_loader, test_loader

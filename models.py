@@ -67,16 +67,17 @@ class MuSigmaEncoder(nn.Module):
         self.r_dim = r_dim
         self.z_dim = z_dim
 
-        self.r_to_hidden = nn.Linear(r_dim, r_dim)
-        self.hidden_to_mu = nn.Linear(r_dim, z_dim)
-        self.hidden_to_sigma = nn.Linear(r_dim, z_dim)
+        self.r_to_hidden = nn.Linear(r_dim+10, r_dim+10)
+        self.hidden_to_mu = nn.Linear(r_dim+10, z_dim)
+        self.hidden_to_sigma = nn.Linear(r_dim+10, z_dim)
 
-    def forward(self, r):
+    def forward(self, r, one_hot):
         """
         r : torch.Tensor
             Shape (batch_size, r_dim)
         """
-        hidden = torch.relu(self.r_to_hidden(r))
+        rr = torch.cat([r, one_hot], 1)
+        hidden = torch.relu(self.r_to_hidden(rr))
         mu = self.hidden_to_mu(hidden)
         # Define sigma following convention in "Empirical Evaluation of Neural
         # Process Objectives" and "Attentive Neural Processes"

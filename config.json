@@ -1,12 +1,10 @@
-{
-  "img_size": [3, 32, 32],
-  "batch_size": 16,
-  "r_dim": 512,
-  "h_dim": 512,
-  "z_dim": 512,
+{"dataset": "mnist",
+  "img_size": [1, 28, 28],
+  "h_dim": 256,
   "num_context_range": [3, 200],
-  "num_extra_target_range": [0, 200],
-  "lr": 4e-5,
+  "z_dim": 256,
+  "batch_size": 16,
   "epochs": 100,
-  "dataset": "celeba"
-}
+  "r_dim": 256,
+  "lr": 5e-05,
+  "num_extra_target_range": [0, 200]}
