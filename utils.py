@@ -191,7 +191,7 @@ def xy_to_img(x, y, img_size):
     return img
 
 
-def inpaint(model, img, context_mask, device):
+def inpaint(model, img, context_mask, onehot, device):
     """
     Given an image and a set of context points, the model samples pixel
     intensities for the remaining pixels in the image.
@@ -218,7 +218,8 @@ def inpaint(model, img, context_mask, device):
     img_batch = img.unsqueeze(0).to(device)
     context_batch = context_mask.unsqueeze(0).to(device)
     target_batch = target_mask.unsqueeze(0).to(device)
-    p_y_pred = model(img_batch, context_batch, target_batch)
+    onehot = onehot.to(device)
+    p_y_pred = model(img_batch, context_batch, onehot, target_batch)
     # Transform Neural Process output back to image
     x_target, _ = img_mask_to_np_input(img_batch, target_batch)
     # Use the mean (i.e. loc) parameter of normal distribution as predictions
