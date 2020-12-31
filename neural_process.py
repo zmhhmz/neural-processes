@@ -1,5 +1,5 @@
 import torch
-from models import Encoder, MuSigmaEncoder, Decoder
+from models import Encoder, MuSigmaEncoder, Decoder, Classifier
 from torch import nn
 from torch.distributions import Normal
 from utils import img_mask_to_np_input
@@ -26,18 +26,21 @@ class NeuralProcess(nn.Module):
     h_dim : int
         Dimension of hidden layer in encoder and decoder.
     """
-    def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim):
+    def __init__(self, x_dim, y_dim, r_dim, z_dim, h_dim, classify=True):
         super(NeuralProcess, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.r_dim = r_dim
         self.z_dim = z_dim
         self.h_dim = h_dim
+        self.classify = classify
 
         # Initialize networks
         self.xy_to_r = Encoder(x_dim, y_dim, h_dim, r_dim)
         self.r_to_mu_sigma = MuSigmaEncoder(r_dim, z_dim)
         self.xz_to_y = Decoder(x_dim, z_dim, h_dim, y_dim)
+        if classify:
+            self.z_to_l = Classifier(z_dim, h_dim)
 
     def aggregate(self, r_i):
         """
@@ -121,7 +124,11 @@ class NeuralProcess(nn.Module):
             y_pred_mu, y_pred_sigma = self.xz_to_y(x_target, z_sample)
             p_y_pred = Normal(y_pred_mu, y_pred_sigma)
 
-            return p_y_pred, q_target, q_context
+            if self.classify:
+                l_pred = self.z_to_l(z_sample)
+                return p_y_pred, q_target, q_context, l_pred
+            else:
+                return p_y_pred, q_target, q_context
         else:
             # At testing time, encode only context
             mu_context, sigma_context = self.xy_to_mu_sigma(x_context, y_context, one_hot)
@@ -153,7 +160,7 @@ class NeuralProcessImg(nn.Module):
     h_dim : int
         Dimension of hidden layer in encoder and decoder.
     """
-    def __init__(self, img_size, r_dim, z_dim, h_dim):
+    def __init__(self, img_size, r_dim, z_dim, h_dim, classify=True):
         super(NeuralProcessImg, self).__init__()
         self.img_size = img_size
         self.num_channels, self.height, self.width = img_size
@@ -163,7 +170,7 @@ class NeuralProcessImg(nn.Module):
 
         self.neural_process = NeuralProcess(x_dim=2, y_dim=self.num_channels,
                                             r_dim=r_dim, z_dim=z_dim,
-                                            h_dim=h_dim)
+                                            h_dim=h_dim, classify=classify)
 
     def forward(self, img, one_hot, context_mask, target_mask):
         """

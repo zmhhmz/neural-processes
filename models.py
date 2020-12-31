@@ -155,3 +155,23 @@ class Decoder(nn.Module):
         # Process Objectives" and "Attentive Neural Processes"
         sigma = 0.1 + 0.9 * F.softplus(pre_sigma)
         return mu, sigma
+
+
+class Classifier(nn.Module):
+    def __init__(self, z_dim, h_dim, l_dim=10):
+        super(Classifier, self).__init__()
+
+        self.z_dim = z_dim
+        self.h_dim = h_dim
+        self.l_dim = l_dim
+
+        layers = [nn.Linear(z_dim, h_dim),
+                  nn.ReLU(inplace=True),
+                  nn.Linear(h_dim, h_dim),
+                  nn.ReLU(inplace=True),
+                  nn.Linear(h_dim, l_dim)]
+
+        self.z_to_l = nn.Sequential(*layers)
+
+    def forward(self, z):
+        return self.z_to_l(z)

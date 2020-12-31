@@ -32,7 +32,7 @@ class NeuralProcessTrainer():
         Frequency with which to print loss information during training.
     """
     def __init__(self, device, neural_process, optimizer, num_context_range,
-                 num_extra_target_range, batch_size, print_freq=100):
+                 num_extra_target_range, batch_size, print_freq=100, classify=True):
         self.device = device
         self.neural_process = neural_process
         self.optimizer = optimizer
@@ -40,6 +40,7 @@ class NeuralProcessTrainer():
         self.num_extra_target_range = num_extra_target_range
         self.print_freq = print_freq
         self.batch_size = batch_size
+        self.classify = classify
 
         # Check if neural process is for images
         self.is_img = isinstance(self.neural_process, NeuralProcessImg)
@@ -78,15 +79,22 @@ class NeuralProcessTrainer():
                 img = img.to(self.device)
                 context_mask = context_mask.to(self.device)
                 target_mask = target_mask.to(self.device)
+                label = label.to(self.device)
                 one_hot = one_hot.to(self.device)
 
-                p_y_pred, q_target, q_context = \
-                    self.neural_process(img, one_hot, context_mask, target_mask)
-
+                if self.classify:
+                    p_y_pred, q_target, q_context, l_pred = \
+                        self.neural_process(img, one_hot, context_mask, target_mask)
+                else:
+                    p_y_pred, q_target, q_context = \
+                        self.neural_process(img, one_hot, context_mask, target_mask)
                 # Calculate y_target as this will be required for loss
                 _, y_target = img_mask_to_np_input(img, target_mask)
 
                 loss = self._loss(p_y_pred, y_target, q_target, q_context)
+                if self.classify:
+                    loss_l = torch.nn.functional.cross_entropy(l_pred, label)
+                    loss += loss_l
                 loss.backward()
                 self.optimizer.step()
 
@@ -96,6 +104,8 @@ class NeuralProcessTrainer():
 
                 if self.steps % self.print_freq == 0:
                     print("iteration {}, loss {:.3f}".format(self.steps, loss.item()))
+                    if self.classify:
+                        print('classification loss: {0}'.format(loss_l.item()))
 
             print("Epoch: {}, Avg_loss: {}".format(epoch, epoch_loss / len(data_loader)))
             self.epoch_loss_history.append(epoch_loss / len(data_loader))

@@ -43,13 +43,15 @@ if config["dataset"] == "mnist":
 elif config["dataset"] == "celeba":
     data_loader = celeba(batch_size=batch_size, size=img_size[1])
 
-np_img = NeuralProcessImg(img_size, r_dim, z_dim, h_dim).to(device)
+classify = True
+
+np_img = NeuralProcessImg(img_size, r_dim, z_dim, h_dim,classify=classify).to(device)
 
 optimizer = torch.optim.Adam(np_img.parameters(), lr=config["lr"])
 
 np_trainer = NeuralProcessTrainer(device, np_img, optimizer,
                                   num_context_range, num_extra_target_range,
-                                  batch_size, print_freq=100)
+                                  batch_size, print_freq=100, classify=classify)
 
 for epoch in range(epochs):
     print("Epoch {}".format(epoch + 1))
