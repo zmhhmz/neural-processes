@@ -210,6 +210,7 @@ def inpaint(model, img, context_mask, onehot, device):
 
     device : torch.device
     """
+    onehot = onehot.view(1, 10)
     is_training = model.neural_process.training
     # For inpainting, use Neural Process in prediction mode
     model.neural_process.training = False
@@ -219,7 +220,7 @@ def inpaint(model, img, context_mask, onehot, device):
     context_batch = context_mask.unsqueeze(0).to(device)
     target_batch = target_mask.unsqueeze(0).to(device)
     onehot = onehot.to(device)
-    p_y_pred = model(img_batch, context_batch, onehot, target_batch)
+    p_y_pred = model(img_batch, onehot, context_batch, target_batch)
     # Transform Neural Process output back to image
     x_target, _ = img_mask_to_np_input(img_batch, target_batch)
     # Use the mean (i.e. loc) parameter of normal distribution as predictions
@@ -227,7 +228,7 @@ def inpaint(model, img, context_mask, onehot, device):
     img_rec = xy_to_img(x_target.cpu(), p_y_pred.loc.detach().cpu(), img.size())
     img_rec = img_rec[0]  # Remove batch dimension
     # Add context points back to image
-    context_mask_img = context_mask.unsqueeze(0).repeat(3, 1, 1)
+    context_mask_img = context_mask.unsqueeze(0)#.repeat(3, 1, 1)
     img_rec[context_mask_img] = img[context_mask_img]
     # Reset model to mode it was in before inpainting
     model.neural_process.training = is_training
